@@ -11,14 +11,6 @@ cur.execute("CREATE TABLE IF NOT EXISTS card"
             " (id INTEGER, number TEXT, pin TEXT, balance INTEGER DEFAULT 0)")
 
 
-def gen_card_num():
-    """Generate card number"""
-    card_number = ("400000" + str(format(random.randint(000000000, 999999999), "09d")))
-
-    card_number = luhn.append(card_number)
-    return card_number
-
-
 class Card:
     """Card object"""
     number = None
@@ -30,12 +22,20 @@ class Card:
 
     def gen_card(self):
         """Generate new card number"""
-        self.number = gen_card_num()
+        self.number = self.gen_card_num()
         self.pin = str(format(random.randint(0000, 9999), "04d"))
 
         cur.execute("insert into card(id, number, pin, balance) \
             values (1, " + self.number + ", " + str(self.pin) + ", " + str(self.balance) + ')')
         conn.commit()
+
+    @staticmethod
+    def gen_card_num():
+        """Generate card number"""
+        card_number = ("400000" + str(format(random.randint(000000000, 999999999), "09d")))
+
+        card_number = luhn.append(card_number)
+        return card_number
 
     def get_card_number(self):
         """Return card number"""
