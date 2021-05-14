@@ -2,7 +2,6 @@
 import random
 import sqlite3
 import sys
-
 import luhn
 
 conn = sqlite3.connect('card.s3db')
@@ -27,6 +26,10 @@ class Card:
     balance = 0
 
     def __init__(self):
+        pass
+
+    def gen_card(self):
+        """Generate new card number"""
         self.number = gen_card_num()
         self.pin = str(format(random.randint(0000, 9999), "04d"))
 
@@ -46,6 +49,7 @@ class Card:
 def card_create():
     """Method to create card"""
     new_card = Card()
+    new_card.gen_card()
     print("\nYour card has been created\n"
           "Your card number:\n"
           f"{new_card.number}\n"
@@ -60,10 +64,10 @@ def account_enter(user):
     pin = input("Enter your PIN:\n")
 
     user.number = card_number
-    cur.execute("SELECT cast(pin as text) FROM card WHERE number=?", (user.number,))
+    cur.execute("SELECT cast(pin as text) FROM card WHERE number=?", (card_number,))
 
     try:
-        user.PIN = str(cur.fetchone()[0])
+        user.pin = cur.fetchone()[0]
     except TypeError:
         return print("\nWrong card number or PIN!\n")
 
