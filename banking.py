@@ -1,15 +1,19 @@
+"""Banking apps"""
 import random
 import sqlite3
+import sys
 
 import luhn
 
 conn = sqlite3.connect('card.s3db')
 cur = conn.cursor()
 
-cur.execute("CREATE TABLE IF NOT EXISTS card (id INTEGER, number TEXT, pin TEXT, balance INTEGER DEFAULT 0)")
+cur.execute("CREATE TABLE IF NOT EXISTS card"
+            " (id INTEGER, number TEXT, pin TEXT, balance INTEGER DEFAULT 0)")
 
 
 def gen_card_num():
+    """Generate card number"""
     card_number = ("400000" + str(format(random.randint(000000000, 999999999), "09d")))
 
     card_number = luhn.append(card_number)
@@ -17,30 +21,41 @@ def gen_card_num():
 
 
 class Card:
+    """Card object"""
     number = None
-    PIN = None
+    pin = None
     balance = 0
 
     def __init__(self):
         self.number = gen_card_num()
-        self.PIN = str(format(random.randint(0000, 9999), "04d"))
+        self.pin = str(format(random.randint(0000, 9999), "04d"))
 
         cur.execute("insert into card(id, number, pin, balance) \
-            values (1, " + self.number + ", " + str(self.PIN) + ", " + str(self.balance) + ')')
+            values (1, " + self.number + ", " + str(self.pin) + ", " + str(self.balance) + ')')
         conn.commit()
+
+    def get_card_number(self):
+        """Return card number"""
+        return self.number
+
+    def get_pin(self):
+        """Return pin"""
+        return self.pin
 
 
 def card_create():
+    """Method to create card"""
     new_card = Card()
     print("\nYour card has been created\n"
           "Your card number:\n"
           f"{new_card.number}\n"
           "Your card PIN:\n"
-          f"{new_card.PIN}\n")
+          f"{new_card.pin}\n")
     return new_card
 
 
 def account_enter(user):
+    """Method to login user"""
     card_number = input("\nEnter your card number:\n")
     pin = input("Enter your PIN:\n")
 
@@ -49,15 +64,18 @@ def account_enter(user):
 
     try:
         user.PIN = str(cur.fetchone()[0])
-    except:
+    except TypeError:
         return print("\nWrong card number or PIN!\n")
 
-    if str(user.PIN) != str(pin):
+    if str(user.pin) != str(pin):
         return print("\nWrong card number or PIN!\n")
     account_menu(user)
 
+    return 0
+
 
 def get_balance(user):
+    """Get balance"""
     cur.execute("SELECT balance FROM card WHERE number=?", (user.number,))
     user.balance = cur.fetchone()[0]
     print(user.balance)
@@ -65,6 +83,7 @@ def get_balance(user):
 
 
 def add_balance(user, value):
+    """Add balance"""
     cur.execute("update card set balance = balance + ? where number = ?", (value, user.number))
     conn.commit()
 
@@ -72,6 +91,7 @@ def add_balance(user, value):
 
 
 def make_transfer(user):
+    """Make transfer"""
     print("Transfer")
     print("Enter card number:")
     transfer_to = input()
@@ -83,25 +103,31 @@ def make_transfer(user):
         print("You can't transfer money to the same account!")
 
     cur.execute("SELECT 1 FROM card WHERE number=?", (transfer_to,))
+
     try:
         transfer_to_exist = cur.fetchone()[0]
-    except:
+    except TypeError:
         return print("\nSuch a card does not exist.\n")
 
-    print("Enter how much money you want to transfer:")
-    transfer_amunt = int(input())
+    if transfer_to_exist == 1:
+        print("Enter how much money you want to transfer:")
+        transfer_amunt = int(input())
 
-    if int(transfer_amunt) > int(get_balance(user)):
-        return print("Not enough money!")
+        if int(transfer_amunt) > int(get_balance(user)):
+            return print("Not enough money!")
 
-    cur.execute("update card set balance = balance - ? where number = ?", (transfer_amunt, user.number))
-    cur.execute("update card set balance = balance + ? where number = ?", (transfer_amunt, transfer_to))
-    conn.commit()
+        cur.execute("update card set balance = balance - ? where number = ?",
+                    (transfer_amunt, user.number))
+        cur.execute("update card set balance = balance + ? where number = ?",
+                    (transfer_amunt, transfer_to))
+        conn.commit()
 
-    print("Success!")
+        print("Success!")
+    return 0
 
 
 def account_menu(user):
+    """Account menu"""
     print("\nYou have successfully logged in!\n")
     while True:
         user_input = input("1. Balance\n"
@@ -129,6 +155,7 @@ def account_menu(user):
 
 
 def close_account(user):
+    """Close account"""
     cur.execute("delete from card where number = ?", (user.number,))
     conn.commit()
 
@@ -136,16 +163,17 @@ def close_account(user):
 
 
 def bye():
+    """Exit"""
     print("\nBye!")
-    exit()
+    sys.exit()
 
 
-user_card = None
+USER_CARD = None
 while True:
     main_input = input("1. Create an account\n2. Log into account\n0. Exit\n")
     if main_input == "0":
         bye()
     if main_input == "1":
-        user_card = card_create()
+        USER_CARD = card_create()
     if main_input == "2":
-        account_enter(user_card)
+        account_enter(USER_CARD)
